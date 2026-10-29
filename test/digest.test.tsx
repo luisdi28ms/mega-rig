@@ -27,4 +27,15 @@ describe('digest page', () => {
     expect(res.status).toBe(200);
     expect(await res.text()).toContain('nothing ran');
   });
+
+  it('counts a bad line and still renders the good ones', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'rig-'));
+    const good = JSON.stringify({ at: '2026-01-02T01:00:00+01:00', job: 'a/b', status: 'ok', owner: null });
+    writeFileSync(join(dir, '2026-01-02.jsonl'), `${good}\nnot json\n`);
+    const res = await createApp({ ...config, runsDir: dir }).request('/digest/2026-01-02');
+    const html = await res.text();
+    expect(res.status).toBe(200);
+    expect(html).toContain('a/b');
+    expect(html).toContain('1 unreadable lines skipped');
+  });
 });
